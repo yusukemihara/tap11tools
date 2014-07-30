@@ -37,10 +37,11 @@ static int
 p11_generate_key(
 	const char *p11lib,
 	const char *pin,
+	const char *strbits,
 	const char *id)
 {
 	int rc;
-	unsigned int nslots;
+	unsigned int bits,nslots;
 	PKCS11_CTX *p11ctx;
 	PKCS11_SLOT *slots, *slot;
 
@@ -90,11 +91,13 @@ p11_generate_key(
 		return -1;
 	}
 
+	bits = (unsigned int)atoi(strbits);
+
 #ifdef HAVE_ONBOARD_KEYGEN
-	rc = PKCS11_generate_key_on_board(slot->token,EVP_PKEY_RSA,2048,
+	rc = PKCS11_generate_key_on_board(slot->token,EVP_PKEY_RSA,bits,
 			(char*)id,(unsigned char*)id,strlen(id));
 #else
-	rc = PKCS11_generate_key(slot->token,EVP_PKEY_RSA,2048,
+	rc = PKCS11_generate_key(slot->token,EVP_PKEY_RSA,bits,
 			(char*)id,(unsigned char*)id,strlen(id));
 #endif
 	if (rc != 0) {
@@ -117,9 +120,9 @@ p11_generate_key(
 int 
 main(int argc,char *argv[])
 {
-	if (argc < 4) {
-		fprintf(stderr,"%% p11_generate_key pkcs11.so pin keyid\n");
+	if (argc < 5) {
+		fprintf(stderr,"%% p11_generate_key pkcs11.so pin keybits keyid\n");
 		return -1;
 	}
-	return p11_generate_key(argv[1],argv[2],argv[3]);
+	return p11_generate_key(argv[1],argv[2],argv[3],argv[4]);
 }
