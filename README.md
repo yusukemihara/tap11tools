@@ -9,8 +9,8 @@ this utility allow follow operations.
 * generate and store key(only rsa)
 * make csr with the key inside token
 * store certificate to token
-* enumerate keys in token
-* enumerate certs in token
+* list keys in token
+* list certs in token
 
 pkcs11tools uses libp11.so you need pkcs#11 library for your token.
 
@@ -46,10 +46,10 @@ p11_change_pin change so or user pin.
 
 p11_generate_key generate rsa key pair and stores it to token.
 
-    % p11_generate_key <pkcs11_library> <pin> <keyid>
+    % p11_generate_key <pkcs11_library> <pin> <keybits> <keyid>
 
     Example:
-      % p11_generate_key /usr/lib/libsomevenderspkcs11.so 1234 "solomon's key"
+      % p11_generate_key /usr/lib/libsomevenderspkcs11.so 1234 2048 "solomon's key"
 
 if you specify --enable-onboard-keygen on configure.
 p11_generate_key try generate key on token.
@@ -74,20 +74,20 @@ p11_store_cert store certificate to token with specify id.
     Example:
       % p11_store_cert /usr/lib/libsomevenderspkcs11.so 1234 "solomon's cert" solomon.pem
 
-#### p11_enum_keys
+#### p11_list_keys
 
-p11_enum_keys list key(id,label) in the token.
+p11_list_keys list key(id,label) in the token.
 
-    % p11_enum_keys <pkcs11_library> <pin>
+    % p11_list_keys <pkcs11_library> <pin>
 
     Example:
-      % p11_enum_keys /usr/lib/libsomevenderspkcs11.so 1234
+      % p11_list_keys /usr/lib/libsomevenderspkcs11.so 1234
 
 #### p11_list_certs
 
-p11_enum_certs list certificate(id,label,pem) in the token.
+p11_list_certs list certificate(id,label,pem) in the token.
 
-    % p11_enum_certs <pkcs11_library> <pin>
+    % p11_list_certs <pkcs11_library> <pin>
 
     Example:
-      % p11_enum_certs /usr/lib/libsomevenderspkcs11.so 1234
+      % p11_list_certs /usr/lib/libsomevenderspkcs11.so 1234

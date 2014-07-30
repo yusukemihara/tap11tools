@@ -1,6 +1,6 @@
 src/p11_change_pin
-src/p11_enum_certs
-src/p11_enum_keys
+src/p11_list_certs
+src/p11_list_keys
 src/p11_generate_key
 src/p11_init_token
 src/p11_make_csr

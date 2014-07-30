@@ -6,7 +6,7 @@ AC_PREREQ([2.69])
 AC_INIT([p11tools],[0.0.1])
 AM_INIT_AUTOMAKE
 
-AC_CONFIG_SRCDIR([src/p11_enum_keys.c])
+AC_CONFIG_SRCDIR([src/p11_list_keys.c])
 AC_CONFIG_HEADERS([config.h])
 
 AC_CONFIG_MACRO_DIR([m4])
