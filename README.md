@@ -14,7 +14,7 @@ this utility allow follow operations.
 * list keys in token
 * list certs in token
 
-pkcs11tools uses libp11.so you need pkcs#11 library for your token.
+p11tools uses libp11.so you need pkcs#11 library for your token.
 
 ## build
 
