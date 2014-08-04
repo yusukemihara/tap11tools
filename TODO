@@ -1,4 +1,5 @@
 * nice option by using some option parser.
+* change subcommand style like OpenSSL.
 * enable get PIN intaractively for security concern.
 * add man pages.
-* portability
+* more portability.

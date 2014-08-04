@@ -1,11 +1,17 @@
 bin_PROGRAMS =			\
 	p11_change_pin		\
+	p11_init_pin		\
 	p11_list_certs		\
 	p11_list_keys		\
 	p11_generate_key	\
 	p11_init_token		\
 	p11_make_csr		\
-	p11_store_cert
+	p11_store_cert		\
+	p11_store_key
+
+p11_init_pin_SOURCES = p11_init_pin.c
+p11_init_pin_CFLAGS = $(P11TOOLS_CFLAGS)
+p11_init_pin_LDADD = $(P11TOOLS_LIBS)
 
 p11_change_pin_SOURCES = p11_change_pin.c
 p11_change_pin_CFLAGS = $(P11TOOLS_CFLAGS)
@@ -34,3 +40,7 @@ p11_make_csr_LDADD = $(P11TOOLS_LIBS)
 p11_store_cert_SOURCES = p11_store_cert.c
 p11_store_cert_CFLAGS = $(P11TOOLS_CFLAGS)
 p11_store_cert_LDADD = $(P11TOOLS_LIBS)
+
+p11_store_key_SOURCES = p11_store_key.c
+p11_store_key_CFLAGS = $(P11TOOLS_CFLAGS)
+p11_store_key_LDADD = $(P11TOOLS_LIBS)
