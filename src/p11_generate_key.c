@@ -38,7 +38,8 @@ p11_generate_key(
 	const char *p11lib,
 	const char *pin,
 	const char *strbits,
-	const char *id)
+	const char *id,
+	int onboard)
 {
 	int rc;
 	unsigned int bits,nslots;
@@ -94,8 +95,15 @@ p11_generate_key(
 	bits = (unsigned int)atoi(strbits);
 
 #ifdef HAVE_ONBOARD_KEYGEN
-	rc = PKCS11_generate_key_on_board(slot->token,EVP_PKEY_RSA,bits,
-			(char*)id,(unsigned char*)id,strlen(id));
+	if (onboard) {
+		fprintf(stderr,"generate key on board\n");
+		rc = PKCS11_generate_key_on_board(slot->token,EVP_PKEY_RSA,bits,
+				(char*)id,(unsigned char*)id,strlen(id));
+	} else {
+		fprintf(stderr,"generate key by soft\n");
+		rc = PKCS11_generate_key(slot->token,EVP_PKEY_RSA,bits,
+				(char*)id,(unsigned char*)id,strlen(id));
+	}
 #else
 	rc = PKCS11_generate_key(slot->token,EVP_PKEY_RSA,bits,
 			(char*)id,(unsigned char*)id,strlen(id));
@@ -120,9 +128,14 @@ p11_generate_key(
 int 
 main(int argc,char *argv[])
 {
+	int onboard = 0;
+
 	if (argc < 5) {
-		fprintf(stderr,"%% p11_generate_key pkcs11.so pin keybits keyid\n");
+		fprintf(stderr,"%% p11_generate_key pkcs11.so pin keybits keyid [onboard]\n");
 		return -1;
 	}
-	return p11_generate_key(argv[1],argv[2],argv[3],argv[4]);
+	if (argc == 6) {
+		onboard = !strcmp("onboard",argv[5]);
+	}
+	return p11_generate_key(argv[1],argv[2],argv[3],argv[4],onboard);
 }

@@ -56,15 +56,14 @@ p11_init_pin init user pin(unlock user pin and set newpin).
 #### p11_generate_key
 
 p11_generate_key generate rsa key pair and stores it to token.
+if specify onboard option,p11_generate_key try generate key on board(token feature).
+to use onboard option,you needs modified libp11(https://github.com/yusukemihara/libp11/tree/for_epass2003).and specify --enable-onboard-keygen on configure.
 
-    % p11_generate_key <pkcs11_library> <pin> <keybits> <keyid>
+    % p11_generate_key <pkcs11_library> <pin> <keybits> <keyid> [onboard]
 
     Example:
       % p11_generate_key /usr/lib/libsomevenderspkcs11.so 1234 2048 "solomon's key"
-
-if you specify --enable-onboard-keygen on configure.
-p11_generate_key try generate key on token.
-this feature needs modified libp11(https://github.com/yusukemihara/libp11/tree/for_epass2003).
+      % p11_generate_key /usr/lib/libsomevenderspkcs11.so 1234 2048 "solomon's key" onboard
 
 #### p11_make_csr
 
