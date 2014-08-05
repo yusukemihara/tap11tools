@@ -33,7 +33,7 @@
 #include <openssl/err.h>
 
 static int
-p11_store_cert(
+tap11_store_cert(
 	const char *libp11,
 	const char *pin,
 	const char *certid,
@@ -136,8 +136,8 @@ int
 main(int argc,char *argv[])
 {
 	if (argc < 4) {
-		fprintf(stderr,"%% p11_store_cert pkcs11.so pin certid cert.pem\n");
+		fprintf(stderr,"%% tap11_store_cert pkcs11.so pin certid cert.pem\n");
 		return 1;
 	}
-	return p11_store_cert(argv[1],argv[2],argv[3],argv[4]);
+	return tap11_store_cert(argv[1],argv[2],argv[3],argv[4]);
 }

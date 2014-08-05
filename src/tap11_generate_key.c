@@ -34,7 +34,7 @@
 #include <openssl/err.h>
 
 static int
-p11_generate_key(
+tap11_generate_key(
 	const char *p11lib,
 	const char *pin,
 	const char *strbits,
@@ -131,11 +131,11 @@ main(int argc,char *argv[])
 	int onboard = 0;
 
 	if (argc < 5) {
-		fprintf(stderr,"%% p11_generate_key pkcs11.so pin keybits keyid [onboard]\n");
+		fprintf(stderr,"%% tap11_generate_key pkcs11.so pin keybits keyid [onboard]\n");
 		return -1;
 	}
 	if (argc == 6) {
 		onboard = !strcmp("onboard",argv[5]);
 	}
-	return p11_generate_key(argv[1],argv[2],argv[3],argv[4],onboard);
+	return tap11_generate_key(argv[1],argv[2],argv[3],argv[4],onboard);
 }

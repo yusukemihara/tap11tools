@@ -1,12 +1,12 @@
-src/p11_change_pin
-src/p11_init_pin
-src/p11_list_certs
-src/p11_list_keys
-src/p11_generate_key
-src/p11_init_token
-src/p11_make_csr
-src/p11_store_cert
-src/p11_store_key
+src/tap11_change_pin
+src/tap11_init_pin
+src/tap11_list_certs
+src/tap11_list_keys
+src/tap11_generate_key
+src/tap11_init_token
+src/tap11_make_csr
+src/tap11_store_cert
+src/tap11_store_key
 
 Makefile
 Makefile.in

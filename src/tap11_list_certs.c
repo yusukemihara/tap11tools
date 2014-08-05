@@ -25,24 +25,30 @@
 #include <sys/stat.h>
 
 #include <libp11.h>
+#include <openssl/crypto.h>
+#include <openssl/x509.h>
+#include <openssl/x509v3.h>
+#include <openssl/pem.h>
+#include <openssl/ssl.h>
+#include <openssl/err.h>
 
 static int
-p11_init_token(
-	const char *p11lib,
-	const char *sopin,
-	const char *pin,
-	const char *label)
+tap11_list_certs(
+	const char *libp11,
+	const char *pin)
 {
-	int rc = 0;
-	unsigned int nslots;
-
+	int i,j,rc;
+	unsigned int nslots,ncerts;
 	PKCS11_CTX *p11ctx;
 	PKCS11_SLOT *slots, *slot;
+	PKCS11_CERT *certs,*cert;
+	BIO *out;
+	char part[256];
 
 	p11ctx = PKCS11_CTX_new();
 
 	/* load pkcs #11 module */
-	rc = PKCS11_CTX_load(p11ctx,p11lib);
+	rc = PKCS11_CTX_load(p11ctx,libp11);
 	if (rc) {
 		fprintf(stderr,"PKCS11_CTX_load\n");
 		return -1;
@@ -69,46 +75,58 @@ p11_init_token(
 	fprintf(stderr,"Slot token model.......: %s\n", slot->token->model);
 	fprintf(stderr,"Slot token serialnr....: %s\n", slot->token->serialnr);
 
-	rc = PKCS11_init_token(slot->token,sopin,label);
+	rc = PKCS11_open_session(slot, 0);
 	if (rc != 0) {
 		ERR_load_PKCS11_strings();
-		fprintf(stderr,"PKCS11_init_token %s\n",
+		fprintf(stderr,"PKCS11_open_session %s\n",
 			ERR_reason_error_string(ERR_get_error()));
 		return -1;
 	}
 
-	/* perform pkcs #11 SO login */
-	rc = PKCS11_login(slot, 1, sopin);
+	rc = PKCS11_login(slot, 0, pin);
 	if (rc != 0) {
 		ERR_load_PKCS11_strings();
-		fprintf(stderr,"PKCS11_init_login %s\n",
+		fprintf(stderr,"PKCS11_login %s\n",
 			ERR_reason_error_string(ERR_get_error()));
 		return -1;
 	}
 
-	rc = PKCS11_init_pin(slot->token,pin);
-	if (rc != 0) {
-		ERR_load_PKCS11_strings();
-		fprintf(stderr,"PKCS11_init_pin %s\n",
-			ERR_reason_error_string(ERR_get_error()));
+	/* get all certs */
+	rc = PKCS11_enumerate_certs(slot->token, &certs, &ncerts);
+	if (rc) {
+		fprintf(stderr,"PKCS11_enumerate_certs\n");
 		return -1;
 	}
+	fprintf(stderr,"ncerts:%d\n",ncerts);
+
+	out = BIO_new_fp(stdout, BIO_NOCLOSE);
+	for(j=0;j<ncerts;j++) {
+		cert=(PKCS11_CERT*)&certs[j];
+		printf("id=");
+		for(i=0;i<cert->id_len;i++) {
+			snprintf(part,sizeof(part),"%02x",(unsigned int)(cert->id[i]));
+			printf("%s",part);
+		}
+		printf(",label=%s\n",cert->label);
+		PEM_write_bio_X509(out,cert->x509);
+		printf("\n");
+	}
+	BIO_free(out);
 
 	PKCS11_logout(slot);
 	PKCS11_release_all_slots(p11ctx, slots, nslots);
 	PKCS11_CTX_unload(p11ctx);
 	PKCS11_CTX_free(p11ctx);
 
-	fprintf(stderr,"\n\ninit token succeed\n");
 	return 0;
 }
 
 int 
 main(int argc,char *argv[])
 {
-	if (argc < 5) {
-		fprintf(stderr,"%% p11_init_token pkcs11.so sopin pin(new) label\n");
-		return -1;
+	if (argc < 2) {
+		fprintf(stderr,"%% tap11_list_certs pkcs11.so pin\n");
+		return 1;
 	}
-	return p11_init_token(argv[1],argv[2],argv[3],argv[4]);
+	return tap11_list_certs(argv[1],argv[2]);
 }

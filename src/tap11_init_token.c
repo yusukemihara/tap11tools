@@ -19,15 +19,19 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
+#include <ctype.h>
+#include <sys/types.h>
+#include <sys/stat.h>
 
 #include <libp11.h>
 
 static int
-p11_change_pin(
+tap11_init_token(
 	const char *p11lib,
-	int is_so,
+	const char *sopin,
 	const char *pin,
-	const char *newpin)
+	const char *label)
 {
 	int rc = 0;
 	unsigned int nslots;
@@ -65,16 +69,16 @@ p11_change_pin(
 	fprintf(stderr,"Slot token model.......: %s\n", slot->token->model);
 	fprintf(stderr,"Slot token serialnr....: %s\n", slot->token->serialnr);
 
-	/* rw mode */
-	rc = PKCS11_open_session(slot, 1);
+	rc = PKCS11_init_token(slot->token,sopin,label);
 	if (rc != 0) {
 		ERR_load_PKCS11_strings();
-		fprintf(stderr,"PKCS11_open_session %s\n",
+		fprintf(stderr,"PKCS11_init_token %s\n",
 			ERR_reason_error_string(ERR_get_error()));
 		return -1;
 	}
 
-	rc = PKCS11_login(slot, is_so, pin);
+	/* perform pkcs #11 SO login */
+	rc = PKCS11_login(slot, 1, sopin);
 	if (rc != 0) {
 		ERR_load_PKCS11_strings();
 		fprintf(stderr,"PKCS11_init_login %s\n",
@@ -82,10 +86,10 @@ p11_change_pin(
 		return -1;
 	}
 
-	rc = PKCS11_change_pin(slot,pin,newpin);
+	rc = PKCS11_init_pin(slot->token,pin);
 	if (rc != 0) {
 		ERR_load_PKCS11_strings();
-		fprintf(stderr,"PKCS11_change_pin %s\n",
+		fprintf(stderr,"PKCS11_init_pin %s\n",
 			ERR_reason_error_string(ERR_get_error()));
 		return -1;
 	}
@@ -95,8 +99,7 @@ p11_change_pin(
 	PKCS11_CTX_unload(p11ctx);
 	PKCS11_CTX_free(p11ctx);
 
-	fprintf(stderr,"\n\npin change succeed\n");
-
+	fprintf(stderr,"\n\ninit token succeed\n");
 	return 0;
 }
 
@@ -104,9 +107,8 @@ int
 main(int argc,char *argv[])
 {
 	if (argc < 5) {
-		fprintf(stderr,"%% p11_change_pin pkcs11.so isso(so or user) pin newpin\n");
+		fprintf(stderr,"%% tap11_init_token pkcs11.so sopin pin(new) label\n");
 		return -1;
 	}
-	p11_change_pin(argv[1],!strcmp("so",argv[2]),argv[3],argv[4]);
-	return 0;
+	return tap11_init_token(argv[1],argv[2],argv[3],argv[4]);
 }

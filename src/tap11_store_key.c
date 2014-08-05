@@ -19,25 +19,38 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
+#include <ctype.h>
+#include <sys/types.h>
+#include <sys/stat.h>
 
 #include <libp11.h>
+#include <openssl/crypto.h>
+#include <openssl/x509.h>
+#include <openssl/x509v3.h>
+#include <openssl/pem.h>
+#include <openssl/ssl.h>
+#include <openssl/err.h>
 
 static int
-p11_init_pin(
-	const char *p11lib,
-	const char *sopin,
-	const char *newpin)
+tap11_store_key(
+	const char *libp11,
+	const char *pin,
+	const char *keyid,
+	const char *keyfile)
 {
-	int rc = 0;
+	int rc;
 	unsigned int nslots;
-
 	PKCS11_CTX *p11ctx;
 	PKCS11_SLOT *slots, *slot;
+	RSA *rsa;
+	EVP_PKEY *pk;
+	BIO *bio;
 
 	p11ctx = PKCS11_CTX_new();
 
 	/* load pkcs #11 module */
-	rc = PKCS11_CTX_load(p11ctx,p11lib);
+	rc = PKCS11_CTX_load(p11ctx,libp11);
 	if (rc) {
 		fprintf(stderr,"PKCS11_CTX_load\n");
 		return -1;
@@ -64,7 +77,6 @@ p11_init_pin(
 	fprintf(stderr,"Slot token model.......: %s\n", slot->token->model);
 	fprintf(stderr,"Slot token serialnr....: %s\n", slot->token->serialnr);
 
-	/* rw mode */
 	rc = PKCS11_open_session(slot, 1);
 	if (rc != 0) {
 		ERR_load_PKCS11_strings();
@@ -73,28 +85,61 @@ p11_init_pin(
 		return -1;
 	}
 
-	rc = PKCS11_login(slot, 1, sopin);
+	rc = PKCS11_login(slot, 0, pin);
 	if (rc != 0) {
 		ERR_load_PKCS11_strings();
-		fprintf(stderr,"PKCS11_init_login %s\n",
+		fprintf(stderr,"PKCS11_login %s\n",
 			ERR_reason_error_string(ERR_get_error()));
 		return -1;
 	}
 
-	rc = PKCS11_init_pin(slot->token,newpin);
-	if (rc != 0) {
-		ERR_load_PKCS11_strings();
-		fprintf(stderr,"PKCS11_init_pin %s\n",
-			ERR_reason_error_string(ERR_get_error()));
+	/* load key */
+	if ((bio = BIO_new(BIO_s_file())) == NULL)
+	{
+		fprintf(stderr,"BIO_new\n");
 		return -1;
 	}
+	if (BIO_read_filename(bio,keyfile) <= 0) {
+		fprintf(stderr,"BIO_read_filename\n");
+		return -1;
+	}
+	rsa = PEM_read_bio_RSAPrivateKey(bio,NULL,NULL,NULL);
+	if (rsa == NULL) {
+		fprintf(stderr,"PEM_read_bio_RSAPrivateKey\n");
+		return -1;
+	}
+	BIO_free(bio);
+
+	pk = EVP_PKEY_new();
+	EVP_PKEY_assign_RSA(pk,rsa);
+
+	/* store key */
+	rc = PKCS11_store_private_key(slot->token,pk,
+			(char*)keyid,(unsigned char*)keyid,strlen(keyid));
+	if (rc != 0) {
+		ERR_load_PKCS11_strings();
+		fprintf(stderr,"PKCS11_store_private_key %s rc:%d\n",
+			ERR_reason_error_string(ERR_get_error()),rc);
+		return -1;
+	}
+
+	rc = PKCS11_store_public_key(slot->token,pk,
+			(char*)keyid,(unsigned char*)keyid,strlen(keyid));
+	if (rc != 0) {
+		ERR_load_PKCS11_strings();
+		fprintf(stderr,"PKCS11_store_public_key %s rc:%d\n",
+			ERR_reason_error_string(ERR_get_error()),rc);
+		return -1;
+	}
+
+	EVP_PKEY_free(pk);
 
 	PKCS11_logout(slot);
 	PKCS11_release_all_slots(p11ctx, slots, nslots);
 	PKCS11_CTX_unload(p11ctx);
 	PKCS11_CTX_free(p11ctx);
 
-	fprintf(stderr,"\n\npin init succeed\n");
+	fprintf(stderr,"\n\nstore key succeed\n");
 
 	return 0;
 }
@@ -102,10 +147,9 @@ p11_init_pin(
 int 
 main(int argc,char *argv[])
 {
-	if (argc < 4) {
-		fprintf(stderr,"%% p11_init_pin pkcs11.so sopin newpin\n");
-		return -1;
+	if (argc < 5) {
+		fprintf(stderr,"%% tap11_store_key pkcs11.so pin keyid key.pem\n");
+		return 1;
 	}
-	p11_init_pin(argv[1],argv[2],argv[3]);
-	return 0;
+	return tap11_store_key(argv[1],argv[2],argv[3],argv[4]);
 }

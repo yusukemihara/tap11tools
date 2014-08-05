@@ -33,7 +33,7 @@
 #include <openssl/err.h>
 
 static int
-p11_enum_keys(
+tap11_list_keys(
 	const char *libp11,
 	const char *pin)
 {
@@ -119,8 +119,8 @@ int
 main(int argc,char *argv[])
 {
 	if (argc < 3) {
-		fprintf(stderr,"%% p11_enum_cert pkcs11.so pin\n");
+		fprintf(stderr,"%% tap11_list_keys pkcs11.so pin\n");
 		return 1;
 	}
-	return p11_enum_keys(argv[1],argv[2]);
+	return tap11_list_keys(argv[1],argv[2]);
 }

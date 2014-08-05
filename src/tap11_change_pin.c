@@ -19,36 +19,26 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <unistd.h>
-#include <ctype.h>
-#include <sys/types.h>
-#include <sys/stat.h>
 
 #include <libp11.h>
-#include <openssl/crypto.h>
-#include <openssl/x509.h>
-#include <openssl/x509v3.h>
-#include <openssl/pem.h>
-#include <openssl/ssl.h>
-#include <openssl/err.h>
 
 static int
-p11_enum_certs(
-	const char *libp11,
-	const char *pin)
+tap11_change_pin(
+	const char *p11lib,
+	int is_so,
+	const char *pin,
+	const char *newpin)
 {
-	int i,j,rc;
-	unsigned int nslots,ncerts;
+	int rc = 0;
+	unsigned int nslots;
+
 	PKCS11_CTX *p11ctx;
 	PKCS11_SLOT *slots, *slot;
-	PKCS11_CERT *certs,*cert;
-	BIO *out;
-	char part[256];
 
 	p11ctx = PKCS11_CTX_new();
 
 	/* load pkcs #11 module */
-	rc = PKCS11_CTX_load(p11ctx,libp11);
+	rc = PKCS11_CTX_load(p11ctx,p11lib);
 	if (rc) {
 		fprintf(stderr,"PKCS11_CTX_load\n");
 		return -1;
@@ -75,7 +65,8 @@ p11_enum_certs(
 	fprintf(stderr,"Slot token model.......: %s\n", slot->token->model);
 	fprintf(stderr,"Slot token serialnr....: %s\n", slot->token->serialnr);
 
-	rc = PKCS11_open_session(slot, 0);
+	/* rw mode */
+	rc = PKCS11_open_session(slot, 1);
 	if (rc != 0) {
 		ERR_load_PKCS11_strings();
 		fprintf(stderr,"PKCS11_open_session %s\n",
@@ -83,40 +74,28 @@ p11_enum_certs(
 		return -1;
 	}
 
-	rc = PKCS11_login(slot, 0, pin);
+	rc = PKCS11_login(slot, is_so, pin);
 	if (rc != 0) {
 		ERR_load_PKCS11_strings();
-		fprintf(stderr,"PKCS11_login %s\n",
+		fprintf(stderr,"PKCS11_init_login %s\n",
 			ERR_reason_error_string(ERR_get_error()));
 		return -1;
 	}
 
-	/* get all certs */
-	rc = PKCS11_enumerate_certs(slot->token, &certs, &ncerts);
-	if (rc) {
-		fprintf(stderr,"PKCS11_enumerate_certs\n");
+	rc = PKCS11_change_pin(slot,pin,newpin);
+	if (rc != 0) {
+		ERR_load_PKCS11_strings();
+		fprintf(stderr,"PKCS11_change_pin %s\n",
+			ERR_reason_error_string(ERR_get_error()));
 		return -1;
 	}
-	fprintf(stderr,"ncerts:%d\n",ncerts);
-
-	out = BIO_new_fp(stdout, BIO_NOCLOSE);
-	for(j=0;j<ncerts;j++) {
-		cert=(PKCS11_CERT*)&certs[j];
-		printf("id=");
-		for(i=0;i<cert->id_len;i++) {
-			snprintf(part,sizeof(part),"%02x",(unsigned int)(cert->id[i]));
-			printf("%s",part);
-		}
-		printf(",label=%s\n",cert->label);
-		PEM_write_bio_X509(out,cert->x509);
-		printf("\n");
-	}
-	BIO_free(out);
 
 	PKCS11_logout(slot);
 	PKCS11_release_all_slots(p11ctx, slots, nslots);
 	PKCS11_CTX_unload(p11ctx);
 	PKCS11_CTX_free(p11ctx);
+
+	fprintf(stderr,"\n\npin change succeed\n");
 
 	return 0;
 }
@@ -124,9 +103,10 @@ p11_enum_certs(
 int 
 main(int argc,char *argv[])
 {
-	if (argc < 2) {
-		fprintf(stderr,"%% p11_enum_certs pkcs11.so pin\n");
-		return 1;
+	if (argc < 5) {
+		fprintf(stderr,"%% tap11_change_pin pkcs11.so isso(so or user) pin newpin\n");
+		return -1;
 	}
-	return p11_enum_certs(argv[1],argv[2]);
+	tap11_change_pin(argv[1],!strcmp("so",argv[2]),argv[3],argv[4]);
+	return 0;
 }

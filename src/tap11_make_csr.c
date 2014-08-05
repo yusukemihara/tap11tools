@@ -162,7 +162,7 @@ parse_name(
 }
 
 static int
-p11_make_csr(
+tap11_make_csr(
 	const char *p11lib,
 	const char *pin,
 	const char *keyid,
@@ -238,8 +238,8 @@ int
 main(int argc,char *argv[])
 {
 	if (argc < 5) {
-		fprintf(stderr,"%% p11_make_csr pkcs11.so pin keyid subject(ex C=JP,O=org,CN=cname)\n");
+		fprintf(stderr,"%% tap11_make_csr pkcs11.so pin keyid subject(ex C=JP,O=org,CN=cname)\n");
 		return -1;
 	}
-	return p11_make_csr(argv[1],argv[2],argv[3],argv[4]);
+	return tap11_make_csr(argv[1],argv[2],argv[3],argv[4]);
 }
